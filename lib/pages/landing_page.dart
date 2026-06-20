@@ -31,8 +31,8 @@ class LandingPage extends StatelessWidget {
                 // Konten Utama Tengah
                 Column(
                   children: [
-                    // Ikon Sumur / Pompa di atas logo SumberKu
-                    Icon(Icons.waves, size: 70, color: Colors.white.withOpacity(0.9)),
+                    // Ikon Sumur / Pompa di atas logo SumberKu (Telah diubah menjadi water_drop)
+                    Icon(Icons.water_drop, size: 70, color: Colors.white.withOpacity(0.9)),
                     const SizedBox(height: 16),
                     // Nama Aplikasi
                     const Text(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'detail_transaksi_page.dart';
+import 'detail_transaksi_pelanggan_page.dart';
 
 class PenawaranMasukPage extends StatelessWidget {
   const PenawaranMasukPage({super.key});
@@ -91,7 +91,7 @@ class PenawaranMasukPage extends StatelessWidget {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: themeColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const DetailTransaksiPage()));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const DetailTransaksiPelangganPage()));
                   },
                   child: const Text('✓ Terima Penawaran', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),

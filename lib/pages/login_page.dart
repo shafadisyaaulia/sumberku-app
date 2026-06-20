@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'main_navigation.dart'; // PENTING: Mengatasi error 'MainNavigation isn't defined'
+import 'pelanggan/main_navigation_pelanggan.dart';
+import 'pemilik/main_navigation_pemilik.dart';
 
 class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+  final String peran; // 'Pelanggan' atau 'Pemilik'
+
+  const LoginPage({super.key, required this.peran});
 
   @override
   Widget build(BuildContext context) {
@@ -16,12 +19,24 @@ class LoginPage extends StatelessWidget {
             flex: 2,
             child: Container(
               alignment: Alignment.center,
-              child: const Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.water, size: 50, color: Colors.white),
-                  SizedBox(height: 10),
-                  Text('SumberKu', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  const Icon(Icons.water_drop, size: 50, color: Colors.white), // Telah diubah menjadi water_drop
+                  const SizedBox(height: 10),
+                  const Text('SumberKu', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      peran == 'Pemilik' ? 'Masuk sebagai Pemilik Sumur' : 'Masuk sebagai Pelanggan',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -73,7 +88,11 @@ class LoginPage extends StatelessWidget {
                         onPressed: () {
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (context) => const MainNavigation()),
+                            MaterialPageRoute(
+                              builder: (context) => peran == 'Pemilik'
+                                  ? const MainNavigationPemilik()
+                                  : const MainNavigationPelanggan(),
+                            ),
                             (route) => false,
                           );
                         },
@@ -84,7 +103,7 @@ class LoginPage extends StatelessWidget {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

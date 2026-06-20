@@ -1,9 +1,39 @@
 import 'package:flutter/material.dart';
 import 'permintaan_air_page.dart';
-import 'penawaran_masuk_page.dart'; // PENTING: Mengatasi error 'PenawaranMasukPage isn't defined'
+import 'penawaran_masuk_page.dart'; 
+import '../landing_page.dart'; // Tambahan import untuk fungsi Keluar
 
 class BerandaPelangganPage extends StatelessWidget {
   const BerandaPelangganPage({super.key});
+
+  // Fungsi untuk memunculkan Pop-up Konfirmasi Keluar
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Konfirmasi Keluar', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // Tutup pop-up
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              // Terlempar ke Landing Page
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LandingPage()),
+                (route) => false,
+              );
+            },
+            child: const Text('Keluar', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,12 +44,57 @@ class BerandaPelangganPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Selamat Datang,', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            const Text('Budi Santoso', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+        // Bagian Title diubah menjadi Dropdown Menu
+        title: PopupMenuButton<String>(
+          offset: const Offset(0, 45), // Mengatur posisi dropdown
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          onSelected: (value) {
+            if (value == 'profil') {
+              // Navigasi ke Halaman Profil (Sementara pakai placeholder)
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Scaffold(appBar: AppBar(title: const Text('Halaman Profil (Segera Hadir)')))),
+              );
+            } else if (value == 'keluar') {
+              _showLogoutDialog(context); // Panggil fungsi pop-up keluar
+            }
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'profil',
+              child: Row(
+                children: [
+                  Icon(Icons.person_outline, color: Colors.black54),
+                  SizedBox(width: 12),
+                  Text('Profil Saya'),
+                ],
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'keluar',
+              child: Row(
+                children: [
+                  Icon(Icons.logout, color: Colors.red),
+                  SizedBox(width: 12),
+                  Text('Keluar', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
           ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Selamat Datang,', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  const Text('Budi Santoso', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                ],
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_down, color: Colors.black54), // Ikon panah bawah biar tau bisa diklik
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -119,7 +194,7 @@ class BerandaPelangganPage extends StatelessWidget {
               children: [
                 CircleAvatar(
                   backgroundColor: themeColor.withOpacity(0.1),
-                  child: Icon(Icons.opacity, color: themeColor),
+                  child: Icon(Icons.water_drop, color: themeColor), // Logo diseragamkan
                 ),
                 const SizedBox(width: 12),
                 Expanded(

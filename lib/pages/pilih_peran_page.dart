@@ -56,7 +56,7 @@ class _PilihPeranPageState extends State<PilihPeranPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      MaterialPageRoute(builder: (context) => LoginPage(peran: selectedRole)),
                     );
                   },
                   child: const Text('Lanjutkan →', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
