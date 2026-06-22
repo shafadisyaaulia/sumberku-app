@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'menunggu_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TawarHargaPage extends StatefulWidget {
   final Map<String, dynamic> pelanggan;
@@ -9,6 +10,13 @@ class TawarHargaPage extends StatefulWidget {
 
   @override
   State<TawarHargaPage> createState() => _TawarHargaPageState();
+}
+
+class _CenterTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue;
+  }
 }
 
 class _TawarHargaPageState extends State<TawarHargaPage> {
@@ -27,7 +35,8 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
     final text = _hargaController.text.trim();
     final val = int.tryParse(text);
     setState(() {
-      _isValid = val != null && val > 0 && val <= widget.pelanggan['hargaMaks'];
+      // Bebas tawar berapa saja tanpa batas harga maksimal
+      _isValid = val != null && val > 0;
     });
   }
 
@@ -44,6 +53,9 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
   @override
   Widget build(BuildContext context) {
     final pelanggan = widget.pelanggan;
+    final int hargaMaks = pelanggan['hargaMaksimal'] ?? pelanggan['harga'] ?? 0;
+    final int jumlahAir = pelanggan['jumlahAir'] ?? 0;
+    final String namaPelanggan = pelanggan['pelangganNama'] ?? pelanggan['namaPelanggan'] ?? 'Pelanggan';
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -61,7 +73,6 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Info pelanggan
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -82,15 +93,17 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
                         height: 36,
                         decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
                         alignment: Alignment.center,
-                        child: Text(pelanggan['avatar'], style: const TextStyle(fontSize: 18)),
+                        child: const Text('👨🏽', style: TextStyle(fontSize: 18)),
                       ),
                       const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(pelanggan['nama'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('${pelanggan['jarakKm']} km dari lokasi Anda', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(namaPelanggan, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('Kecamatan: ${pelanggan['kecamatan'] ?? '-'}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -103,7 +116,7 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
                         const SizedBox(width: 6),
                         Text('Jumlah Air', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                       ]),
-                      Text('${pelanggan['jumlahAir']} Liter', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text('$jumlahAir Liter', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -116,7 +129,7 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
                         Text('Harga Maksimal', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                       ]),
                       Text(
-                        'Rp ${_formatRupiah(pelanggan['hargaMaks'])}',
+                        'Rp ${_formatRupiah(hargaMaks)}',
                         style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
@@ -126,13 +139,12 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
             ),
             const SizedBox(height: 20),
 
-            // Input harga penawaran
             const Text('Harga Penawaran Anda (Rp)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 8),
             TextField(
               controller: _hargaController,
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly, _CenterTextFormatter()],
               decoration: InputDecoration(
                 hintText: 'Contoh: 45000',
                 hintStyle: TextStyle(color: Colors.grey[400]),
@@ -144,37 +156,13 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Masukkan harga yang Anda tawarkan (maksimal Rp ${_formatRupiah(pelanggan['hargaMaks'])})',
+              'Masukkan harga penawaran terbaik Anda (bebas tanpa batas maksimal)',
               style: TextStyle(color: Colors.grey[500], fontSize: 11),
             ),
             const SizedBox(height: 16),
 
-            // Tips
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFFE082)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('💡 ', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Tips: Berikan harga yang kompetitif untuk meningkatkan peluang penawaran Anda diterima',
-                      style: TextStyle(color: Colors.orange[900], fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const Spacer(),
 
-            // Tombol kirim
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -184,31 +172,68 @@ class _TawarHargaPageState extends State<TawarHargaPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: _isValid
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MenungguPage(
-                              pelanggan: pelanggan,
-                              hargaPenawaran: int.parse(_hargaController.text.trim()),
-                            ),
-                          ),
+                    ? () async {
+                        final uidPemilik = FirebaseAuth.instance.currentUser?.uid;
+                        if (uidPemilik == null) return;
+
+                        // Tampilkan loading indicator sebentar agar aman
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => const Center(child: CircularProgressIndicator(color: primaryTeal)),
                         );
+
+                        try {
+                          final userDoc = await FirebaseFirestore.instance.collection('users').doc(uidPemilik).get();
+                          final namaPemilik = userDoc.data()?['nama'] ?? 'Pemilik Sumur';
+                          final permintaanId = pelanggan['id'] ?? pelanggan['permintaanId'];
+
+                          // 1. Simpan data penawaran ke subcollection
+                          final refPenawaran = FirebaseFirestore.instance
+                              .collection('permintaan')
+                              .doc(permintaanId)
+                              .collection('penawaran')
+                              .doc(uidPemilik); // Pakai UID pemilik sebagai ID biar tidak double kirim
+
+                          await refPenawaran.set({
+                            'id': uidPemilik,
+                            'pemilikUid': uidPemilik,
+                            'pemilikNama': namaPemilik,
+                            'hargaTawaran': int.parse(_hargaController.text.trim()),
+                            'status': 'menunggu',
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+
+                          // 2. Update status penawaran utama di permintaan menjadi 'menunggu_konfirmasi'
+                          await FirebaseFirestore.instance.collection('permintaan').doc(permintaanId).update({
+                            'status': 'menunggu_konfirmasi',
+                          });
+
+                          if (!mounted) return;
+                          Navigator.pop(context); // Tutup loading dialog
+                          Navigator.pop(context); // Kembali ke Beranda utama
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Penawaran harga berhasil dikirim!')),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          Navigator.pop(context); // Tutup loading dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Gagal mengirim penawaran: $e')),
+                          );
+                        }
                       }
                     : null,
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Kirim Penawaran',
-                      style: TextStyle(
-                        color: _isValid ? Colors.white : Colors.grey[500],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                     ),
-                    const SizedBox(width: 6),
-                    Icon(Icons.arrow_forward, color: _isValid ? Colors.white : Colors.grey[500], size: 18),
+                    SizedBox(width: 6),
+                    Icon(Icons.arrow_forward, color: Colors.white, size: 18),
                   ],
                 ),
               ),

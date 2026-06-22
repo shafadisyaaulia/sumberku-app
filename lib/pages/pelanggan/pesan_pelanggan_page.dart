@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // =========================================================
-// 1. HALAMAN DAFTAR CHAT (Sperti WhatsApp)
+// 1. HALAMAN DAFTAR CHAT
 // =========================================================
 class PesanPelangganPage extends StatelessWidget {
   const PesanPelangganPage({super.key});
@@ -9,141 +11,167 @@ class PesanPelangganPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryTeal = Color(0xFF2C6B6F);
-
-    // Data dummy untuk daftar chat
-    final List<Map<String, dynamic>> chatList = [
-      {
-        'nama': 'Sumur Pak Anto',
-        'pesanTerakhir': 'Sekitar 15-20 menit lagi',
-        'waktu': '10:30',
-        'unread': 2,
-        'isOnline': true,
-      },
-      {
-        'nama': 'Sumur Barokah',
-        'pesanTerakhir': 'Baik, terima kasih pesanannya Pak.',
-        'waktu': 'Kemarin',
-        'unread': 0,
-        'isOnline': false,
-      },
-      {
-        'nama': 'Tirta Makmur',
-        'pesanTerakhir': 'Air galon juga ready ya kak',
-        'waktu': 'Kemarin',
-        'unread': 0,
-        'isOnline': true,
-      },
-    ];
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        title: const Text('Pesan', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        automaticallyImplyLeading: false,
+        title: const Text('Pesan',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.black54), onPressed: () {}),
+          IconButton(
+              icon: const Icon(Icons.search, color: Colors.black54),
+              onPressed: () {}),
         ],
       ),
-      body: ListView.separated(
-        itemCount: chatList.length,
-        separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.black12),
-        itemBuilder: (context, index) {
-          final chat = chatList[index];
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Stack(
-              children: [
-                const CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Color(0xFFE8F2F2),
-                  child: Icon(Icons.store, color: primaryTeal, size: 24),
-                ),
-                if (chat['isOnline'])
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
+      body: uid == null
+          ? const Center(child: Text('Silakan login terlebih dahulu'))
+          : StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('transaksi')
+                  .where('pelangganUid', isEqualTo: uid)
+                  .where('status', whereIn: ['aktif', 'di_jalan'])
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline,
+                            size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Belum ada pesan.\nChat akan muncul setelah transaksi aktif.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
                     ),
-                  ),
-              ],
+                  );
+                }
+
+                final docs = snapshot.data!.docs;
+                return ListView.separated(
+                  itemCount: docs.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1, color: Colors.black12),
+                  itemBuilder: (context, index) {
+                    final data =
+                        docs[index].data() as Map<String, dynamic>;
+                    final transaksiId = docs[index].id;
+                    final namaPemilik =
+                        data['namaPemilik'] ?? 'Pemilik Sumur';
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      leading: const CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Color(0xFFE8F2F2),
+                        child:
+                            Icon(Icons.store, color: primaryTeal, size: 24),
+                      ),
+                      title: Text(namaPemilik,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      subtitle: Text(
+                        'Transaksi aktif — ketuk untuk chat',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RuangChatPelangganPage(
+                              transaksiId: transaksiId,
+                              namaLawan: namaPemilik,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
-            title: Text(chat['nama'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            subtitle: Text(
-              chat['pesanTerakhir'],
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: chat['unread'] > 0 ? Colors.black87 : Colors.grey[600], fontWeight: chat['unread'] > 0 ? FontWeight.w600 : FontWeight.normal),
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(chat['waktu'], style: TextStyle(color: chat['unread'] > 0 ? primaryTeal : Colors.grey, fontSize: 12, fontWeight: chat['unread'] > 0 ? FontWeight.bold : FontWeight.normal)),
-                const SizedBox(height: 4),
-                if (chat['unread'] > 0)
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(color: primaryTeal, shape: BoxShape.circle),
-                    child: Text(chat['unread'].toString(), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-              ],
-            ),
-            onTap: () {
-              // Menuju Ruang Chat
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const RuangChatPelangganPage()));
-            },
-          );
-        },
-      ),
     );
   }
 }
 
 // =========================================================
-// 2. HALAMAN RUANG CHAT (Kode Asli Milikmu)
+// 2. HALAMAN RUANG CHAT (Firebase Realtime)
 // =========================================================
 class RuangChatPelangganPage extends StatefulWidget {
-  const RuangChatPelangganPage({super.key});
+  final String transaksiId;
+  final String namaLawan;
+
+  const RuangChatPelangganPage({
+    super.key,
+    required this.transaksiId,
+    required this.namaLawan,
+  });
 
   @override
-  State<RuangChatPelangganPage> createState() => _RuangChatPelangganPageState();
+  State<RuangChatPelangganPage> createState() =>
+      _RuangChatPelangganPageState();
 }
 
 class _RuangChatPelangganPageState extends State<RuangChatPelangganPage> {
   final TextEditingController _controller = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [
-    {'text': 'Halo, apakah air sudah siap dikirim?', 'isMe': true},
-    {'text': 'Siap Pak, sedang dalam perjalanan ke lokasi Anda', 'isMe': false},
-    {'text': 'Kira-kira berapa lama sampainya?', 'isMe': true},
-    {'text': 'Sekitar 15-20 menit lagi', 'isMe': false},
-  ];
+  final ScrollController _scrollController = ScrollController();
+  final Color primaryTeal = const Color(0xFF2C6B6F);
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _sendMessage() {
+  void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    setState(() {
-      _messages.add({'text': text, 'isMe': true});
-      _controller.clear();
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    _controller.clear();
+
+    await FirebaseFirestore.instance
+        .collection('transaksi')
+        .doc(widget.transaksiId)
+        .collection('chat')
+        .add({
+      'pengirimUid': uid,
+      'pesan': text,
+      'waktu': FieldValue.serverTimestamp(),
+    });
+
+    // Scroll ke bawah setelah kirim
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController
+            .jumpTo(_scrollController.position.maxScrollExtent);
+      }
     });
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const Color primaryTeal = Color(0xFF2C6B6F);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -154,52 +182,99 @@ class _RuangChatPelangganPageState extends State<RuangChatPelangganPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               radius: 16,
               backgroundColor: Color(0xFFE8F2F2),
-              child: Icon(Icons.store, color: primaryTeal, size: 16),
+              child: Icon(Icons.store, color: Color(0xFF2C6B6F), size: 16),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Sumur Pak Anto', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-                Text('● Online', style: TextStyle(color: Colors.green, fontSize: 10)),
+                Text(widget.namaLawan,
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold)),
+                const Text('● Online',
+                    style: TextStyle(color: Colors.green, fontSize: 10)),
               ],
             ),
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.phone, color: primaryTeal), onPressed: () {}),
+          IconButton(
+              icon: const Icon(Icons.phone, color: Color(0xFF2C6B6F)),
+              onPressed: () {}),
         ],
       ),
       body: Column(
         children: [
+          // Banner info transaksi
           Container(
             margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFFE8F2F2),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: primaryTeal.withOpacity(0.3)),
+              border: Border.all(
+                  color: const Color(0xFF2C6B6F).withOpacity(0.3)),
             ),
             child: const Row(
               children: [
-                Icon(Icons.water_drop, color: primaryTeal, size: 16),
+                Icon(Icons.water_drop, color: Color(0xFF2C6B6F), size: 16),
                 SizedBox(width: 8),
-                Text('Transaksi aktif: 1000L • Rp 45.000', style: TextStyle(color: primaryTeal, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text('Transaksi aktif',
+                    style: TextStyle(
+                        color: Color(0xFF2C6B6F),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
+
+          // List pesan dari Firebase
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _messages.length,
-              itemBuilder: (context, i) => _buildBubble(_messages[i]['text'], _messages[i]['isMe']),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('transaksi')
+                  .doc(widget.transaksiId)
+                  .collection('chat')
+                  .orderBy('waktu', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text('Belum ada pesan. Mulai chat sekarang!',
+                        style: TextStyle(color: Colors.black54)),
+                  );
+                }
+
+                final messages = snapshot.data!.docs;
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, i) {
+                    final data =
+                        messages[i].data() as Map<String, dynamic>;
+                    final isMe = data['pengirimUid'] == uid;
+                    return _buildBubble(data['pesan'] ?? '', isMe);
+                  },
+                );
+              },
             ),
           ),
+
+          // Input bar
           Container(
             padding: const EdgeInsets.all(12),
             color: Colors.white,
@@ -212,8 +287,11 @@ class _RuangChatPelangganPageState extends State<RuangChatPelangganPage> {
                       hintText: 'Ketik pesan ke pemilik sumur...',
                       filled: true,
                       fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),
@@ -222,7 +300,7 @@ class _RuangChatPelangganPageState extends State<RuangChatPelangganPage> {
                 GestureDetector(
                   onTap: _sendMessage,
                   child: const CircleAvatar(
-                    backgroundColor: primaryTeal,
+                    backgroundColor: Color(0xFF2C6B6F),
                     child: Icon(Icons.send, color: Colors.white, size: 18),
                   ),
                 ),
@@ -239,7 +317,8 @@ class _RuangChatPelangganPageState extends State<RuangChatPelangganPage> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: const BoxConstraints(maxWidth: 260),
         decoration: BoxDecoration(
           color: isMe ? const Color(0xFF2C6B6F) : Colors.white,
@@ -249,9 +328,16 @@ class _RuangChatPelangganPageState extends State<RuangChatPelangganPage> {
             bottomLeft: Radius.circular(isMe ? 14 : 0),
             bottomRight: Radius.circular(isMe ? 0 : 14),
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2))
+          ],
         ),
-        child: Text(text, style: TextStyle(color: isMe ? Colors.white : Colors.black, fontSize: 13)),
+        child: Text(text,
+            style: TextStyle(
+                color: isMe ? Colors.white : Colors.black, fontSize: 13)),
       ),
     );
   }

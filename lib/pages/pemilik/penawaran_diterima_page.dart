@@ -5,8 +5,14 @@ import 'main_navigation_pemilik.dart';
 class PenawaranDiterimaPage extends StatelessWidget {
   final Map<String, dynamic> pelanggan;
   final int hargaPenawaran;
+  final String permintaanId;
 
-  const PenawaranDiterimaPage({super.key, required this.pelanggan, required this.hargaPenawaran});
+  const PenawaranDiterimaPage({
+    super.key, 
+    required this.pelanggan, 
+    required this.hargaPenawaran,
+    required this.permintaanId,
+  });
 
   String _formatRupiah(int amount) {
     return amount.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
@@ -15,6 +21,8 @@ class PenawaranDiterimaPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryTeal = Color(0xFF2C6B6F);
+    final String namaPelanggan = pelanggan['pelangganNama'] ?? 'Pelanggan';
+    final int jumlahAir = pelanggan['jumlahAir'] ?? 0;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -25,28 +33,18 @@ class PenawaranDiterimaPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-
-              // Icon sukses
               Container(
                 width: 90,
                 height: 90,
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: Colors.green[50], shape: BoxShape.circle),
                 child: const Icon(Icons.check_circle, color: Colors.green, size: 50),
               ),
               const SizedBox(height: 20),
               const Text('Penawaran Diterima!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text(
-                'Pelanggan telah menerima penawaran Anda',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                textAlign: TextAlign.center,
-              ),
+              Text('Pelanggan telah menyetujui harga tawaran Anda.', style: TextStyle(color: Colors.grey[600], fontSize: 13), textAlign: TextAlign.center),
               const SizedBox(height: 28),
 
-              // Detail card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -64,14 +62,14 @@ class PenawaranDiterimaPage extends StatelessWidget {
                           height: 36,
                           decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
                           alignment: Alignment.center,
-                          child: Text(pelanggan['avatar'], style: const TextStyle(fontSize: 18)),
+                          child: const Text('👨🏽', style: TextStyle(fontSize: 18)),
                         ),
                         const SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(pelanggan['nama'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text('${pelanggan['jarakKm']} km dari lokasi Anda', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                            Text(namaPelanggan, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('Wilayah: ${pelanggan['kecamatan']}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                           ],
                         ),
                       ],
@@ -81,14 +79,14 @@ class PenawaranDiterimaPage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Jumlah Air', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                        Text('${pelanggan['jumlahAir']} Liter', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('$jumlahAir Liter', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Total Harga', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                        Text('Total Harga Sepakat', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                         Text(
                           'Rp ${_formatRupiah(hargaPenawaran)}',
                           style: const TextStyle(color: primaryTeal, fontWeight: FontWeight.bold, fontSize: 15),
@@ -98,10 +96,8 @@ class PenawaranDiterimaPage extends StatelessWidget {
                   ],
                 ),
               ),
-
               const Spacer(),
 
-              // Tombol aksi
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -111,7 +107,12 @@ class PenawaranDiterimaPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DetailTransaksiPemilikPage()));
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(
+                        builder: (_) => DetailTransaksiPemilikPage(permintaanId: permintaanId)
+                      )
+                    );
                   },
                   child: const Text('Lihat Detail Transaksi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
                 ),

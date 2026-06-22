@@ -18,7 +18,7 @@ class _MainNavigationPemilikState extends State<MainNavigationPemilik> {
   final List<Widget> _pages = [
     const BerandaPemilikPage(),
     const PesanPemilikPage(),
-    const RiwayatTransaksiPemilikPage(),
+    const RiwayatPemilikPage(),
     const NotifikasiPemilikPage(),
     const ProfilPemilikPage(), // Sekarang ini murni mengambil dari profil_pemilik_page.dart
   ];
