@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'permintaan_air_page.dart';
 import 'penawaran_masuk_page.dart';
 import 'detail_transaksi_pelanggan_page.dart';
-import 'notifikasi_pelanggan_page.dart'; // 1. PASTIKAN IMPORT INI ADA
+import 'notifikasi_pelanggan_page.dart'; 
 import '../landing_page.dart';
 
 class BerandaPelangganPage extends StatefulWidget {
@@ -71,8 +71,17 @@ class _BerandaPelangganPageState extends State<BerandaPelangganPage> {
     );
   }
 
+  // Fungsi pembantu membuat format Rp XX.XXX di dalam dialog konfirmasi
+  String _formatRupiah(dynamic amount) {
+    if (amount == null) return '0';
+    final val = amount is int ? amount : int.tryParse(amount.toString()) ?? 0;
+    return val.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+  }
+
   void _showKonfirmasiTawaran(BuildContext context, String permintaanId, Map<String, dynamic> data) {
-    final int hargaTawar = data['harga'] ?? 0;
+    // Perbaikan: Mengambil harga tawar dari pemilik sumur secara dinamis, fallback ke harga awal jika null
+    final int hargaTawar = data['hargaTawar'] ?? data['harga'] ?? 0;
     final String namaPemilik = data['namaPemilik'] ?? 'Pemilik Sumur';
 
     showDialog(
@@ -86,7 +95,7 @@ class _BerandaPelangganPageState extends State<BerandaPelangganPage> {
             Text('Penawaran Harga', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text('$namaPemilik menawarkan harga Rp $hargaTawar untuk pesanan airmu.\n\nApakah kamu setuju?'),
+        content: Text('$namaPemilik menawarkan harga Rp ${_formatRupiah(hargaTawar)} untuk pesanan airmu.\n\nApakah kamu setuju?'),
         actions: [
           TextButton(
             onPressed: () async {
@@ -95,6 +104,7 @@ class _BerandaPelangganPageState extends State<BerandaPelangganPage> {
                 'pemilikUid': FieldValue.delete(),
                 'namaPemilik': FieldValue.delete(),
                 'harga': FieldValue.delete(),
+                'hargaTawar': FieldValue.delete(),
               });
               if (!context.mounted) return;
               Navigator.pop(context);
@@ -213,7 +223,6 @@ class _BerandaPelangganPageState extends State<BerandaPelangganPage> {
           ),
         ),
         actions: [
-          // 2. PERBAIKAN: Sekarang kalau dipencet, langsung pindah ke Halaman Notifikasi
           IconButton(
             icon: Icon(Icons.notifications_none, color: primaryTeal),
             onPressed: () {
